@@ -11,7 +11,7 @@ export default function Home() {
 
   const handleLoadExamToPreview = async (examId: string) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/saved-exams/${examId}`);
+      const res = await fetch(`/api/v1/saved-exams/${examId}`);
       if (res.ok) {
         const data = await res.json();
         setLoadedExam(data);

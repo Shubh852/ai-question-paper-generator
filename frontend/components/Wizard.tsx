@@ -137,7 +137,7 @@ export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps =
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('http://127.0.0.1:8000/api/v1/upload-logo', {
+      const res = await fetch('/api/v1/upload-logo', {
         method: 'POST',
         body: formData,
       });

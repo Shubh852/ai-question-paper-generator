@@ -38,7 +38,7 @@ export default function SavedPapersDashboard({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/saved-exams');
+      const res = await fetch('/api/v1/saved-exams');
       if (!res.ok) throw new Error('Failed to fetch saved question papers');
       const data = await res.json();
       setExams(data.exams || []);
@@ -57,7 +57,7 @@ export default function SavedPapersDashboard({
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this saved question paper?')) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/saved-exams/${id}`, {
+      const res = await fetch(`/api/v1/saved-exams/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete paper');
@@ -70,7 +70,7 @@ export default function SavedPapersDashboard({
   const handleDownload = async (id: string, type: 'student' | 'solution', title: string) => {
     setDownloadingId(`${id}-${type}`);
     try {
-      const url = `http://127.0.0.1:8000/api/v1/download-pdf/${id}?doc=${type}`;
+      const url = `/api/v1/download-pdf/${id}?doc=${type}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to generate PDF download');
       const blob = await res.blob();
