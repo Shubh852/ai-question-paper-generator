@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 300" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="#ffffff" />
+  <!-- Glass Prism Triangle -->
+  <polygon points="225,40 100,240 350,240" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5" />
+  <text x="220" y="32" font-family="sans-serif" font-size="15" font-weight="bold" fill="#0369a1">A</text>
+  <text x="85" y="250" font-family="sans-serif" font-size="14" font-weight="bold" fill="#0369a1">B</text>
+  <text x="355" y="250" font-family="sans-serif" font-size="14" font-weight="bold" fill="#0369a1">C</text>
+  <!-- Incident Ray PE -->
+  <line x1="40" y1="180" x2="155" y2="152" stroke="#dc2626" stroke-width="2.5" />
+  <!-- Arrow on incident ray -->
+  <polygon points="95,163 103,165 98,171" fill="#dc2626" />
+  <text x="35" y="172" font-family="sans-serif" font-size="13" font-weight="bold" fill="#dc2626">Incident Ray</text>
+  <!-- Refracted Ray EF -->
+  <line x1="155" y1="152" x2="280" y2="152" stroke="#dc2626" stroke-width="2.5" />
+  <polygon points="220,152 212,148 212,156" fill="#dc2626" />
+  <!-- Emergent Ray FS -->
+  <line x1="280" y1="152" x2="400" y2="200" stroke="#dc2626" stroke-width="2.5" />
+  <polygon points="345,178 337,172 341,182" fill="#dc2626" />
+  <text x="350" y="218" font-family="sans-serif" font-size="13" font-weight="bold" fill="#dc2626">Emergent Ray</text>
+  <!-- Normal at AB -->
+  <line x1="120" y1="110" x2="200" y2="200" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4" />
+  <text x="110" y="105" font-family="sans-serif" font-size="11" fill="#64748b">N1</text>
+  <!-- Normal at AC -->
+  <line x1="320" y1="110" x2="240" y2="200" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4" />
+  <text x="325" y="105" font-family="sans-serif" font-size="11" fill="#64748b">N2</text>
+  <!-- Angle of Deviation Delta -->
+  <line x1="155" y1="152" x2="310" y2="115" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3" />
+  <line x1="280" y1="152" x2="230" y2="132" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,3" />
+  <text x="270" y="125" font-family="sans-serif" font-size="13" font-weight="bold" fill="#7c3aed">&#948; (Deviation)</text>
+  <text x="125" y="145" font-family="sans-serif" font-size="12" font-weight="bold" fill="#1e293b">i</text>
+  <text x="295" y="145" font-family="sans-serif" font-size="12" font-weight="bold" fill="#1e293b">e</text>
+</svg>

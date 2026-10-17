@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 300" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="#ffffff" />
+  <!-- Heart Outline Box/Septum -->
+  <rect x="130" y="50" width="200" height="200" rx="20" fill="#f8fafc" stroke="#991b1b" stroke-width="3" />
+  <!-- Central Septum separating Right (deoxygenated - blue) and Left (oxygenated - red) -->
+  <line x1="230" y1="50" x2="230" y2="250" stroke="#991b1b" stroke-width="5" />
+  <!-- Horizontal Valve divider -->
+  <line x1="130" y1="140" x2="330" y2="140" stroke="#991b1b" stroke-width="3" stroke-dasharray="6,4" />
+  <!-- Right Atrium (RA) -->
+  <rect x="135" y="55" width="90" height="80" rx="10" fill="#dbeafe" />
+  <text x="145" y="95" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1e40af">Right Atrium</text>
+  <text x="155" y="112" font-family="sans-serif" font-size="10" fill="#1e3a8a">(Deox. Blood)</text>
+  <!-- Right Ventricle (RV) -->
+  <rect x="135" y="145" width="90" height="100" rx="10" fill="#bfdbfe" />
+  <text x="142" y="195" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1e40af">Right Ventricle</text>
+  <text x="145" y="212" font-family="sans-serif" font-size="10" fill="#1e3a8a">&#8594; Pulm. Artery</text>
+  <!-- Left Atrium (LA) -->
+  <rect x="235" y="55" width="90" height="80" rx="10" fill="#fee2e2" />
+  <text x="250" y="95" font-family="sans-serif" font-size="13" font-weight="bold" fill="#991b1b">Left Atrium</text>
+  <text x="252" y="112" font-family="sans-serif" font-size="10" fill="#7f1d1d">(Ox. Blood)</text>
+  <!-- Left Ventricle (LV - Thick walled) -->
+  <rect x="235" y="145" width="90" height="100" rx="10" fill="#fca5a5" />
+  <text x="245" y="195" font-family="sans-serif" font-size="13" font-weight="bold" fill="#991b1b">Left Ventricle</text>
+  <text x="255" y="212" font-family="sans-serif" font-size="10" fill="#7f1d1d">&#8594; Aorta (Body)</text>
+  <!-- Blood Flow Labels & Arrows -->
+  <text x="30" y="90" font-family="sans-serif" font-size="12" font-weight="bold" fill="#1e40af">Vena Cava &#8594;</text>
+  <text x="345" y="90" font-family="sans-serif" font-size="12" font-weight="bold" fill="#991b1b">&#8592; Pulm. Veins</text>
+  <text x="200" y="280" font-family="sans-serif" font-size="12" font-weight="bold" fill="#1e293b">Interventricular Septum</text>
+</svg>

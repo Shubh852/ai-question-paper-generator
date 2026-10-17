@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 200" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="#ffffff" />
+  <!-- Inputs A and B -->
+  <line x1="40" y1="65" x2="110" y2="65" stroke="#1e293b" stroke-width="2" />
+  <text x="25" y="70" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e293b">A</text>
+  <line x1="40" y1="95" x2="110" y2="95" stroke="#1e293b" stroke-width="2" />
+  <text x="25" y="100" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e293b">B</text>
+  <!-- NAND Gate 1 -->
+  <path d="M 110 50 L 140 50 A 30 30 0 0 1 140 110 L 110 110 Z" fill="#eff6ff" stroke="#2563eb" stroke-width="2" />
+  <circle cx="174" cy="80" r="4" fill="#ffffff" stroke="#2563eb" stroke-width="2" />
+  <text x="120" y="85" font-family="sans-serif" font-size="11" font-weight="bold" fill="#1e40af">NAND</text>
+  <!-- Intermediate wire Y1 -->
+  <line x1="178" y1="80" x2="250" y2="80" stroke="#1e293b" stroke-width="2" />
+  <text x="200" y="72" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">Y1</text>
+  <!-- Input C -->
+  <line x1="40" y1="150" x2="250" y2="150" stroke="#1e293b" stroke-width="2" />
+  <text x="25" y="155" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e293b">C</text>
+  <!-- NOR Gate 2 -->
+  <path d="M 250 65 Q 265 115 250 165 Q 285 165 310 115 Q 285 65 250 65 Z" fill="#fef2f2" stroke="#dc2626" stroke-width="2" />
+  <circle cx="314" cy="115" r="4" fill="#ffffff" stroke="#dc2626" stroke-width="2" />
+  <text x="265" y="120" font-family="sans-serif" font-size="11" font-weight="bold" fill="#991b1b">NOR</text>
+  <!-- Final Output Y -->
+  <line x1="318" y1="115" x2="400" y2="115" stroke="#1e293b" stroke-width="2.5" />
+  <text x="410" y="120" font-family="sans-serif" font-size="15" font-weight="bold" fill="#15803d">Y (Output)</text>
+</svg>

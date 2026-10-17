@@ -1,0 +1,55 @@
+# Environment & Secrets (Crucial: Never commit Supabase credentials)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Python Virtual Environments & Caches
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+*.coverage
+
+# Node.js & Next.js Build Outputs
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+frontend/out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Portable Embedded Tools
+tools/
+
+# Temporary Typst and Test PDF Artifacts
+*.typ
+test_*.pdf
+test_*.typ
+_typst_*.typ
+_temp_*.typ
+data/temp/
+*.log
+
+# SQLite Locks & Journals
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Seed Material PDFs (heavy raw books)
+seed_materials/*.pdf
+seed_materials/**/*.pdf
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
