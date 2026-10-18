@@ -702,7 +702,7 @@ class Database:
         }
 
     def login_teacher(self, email_or_phone: str, password: str = "") -> Optional[Dict[str, Any]]:
-        """Validates or finds existing teacher account by email or whatsapp."""
+        """Validates or finds existing teacher account by email or whatsapp in SQLite and Supabase."""
         term = email_or_phone.strip()
         with sqlite3.connect(SQLITE_DB_PATH) as conn:
             conn.row_factory = sqlite3.Row
@@ -725,6 +725,45 @@ class Database:
                     "primary_grade": t.get("primary_grade", 10),
                     "primary_subject": t.get("primary_subject", "Mathematics")
                 }
+
+        # Query Supabase cloud leads if not cached locally in SQLite
+        if self.use_supabase:
+            try:
+                clean_phone = re.sub(r"[^\d+]", "", term)
+                res = self.client.table("teacher_leads").select("*").or_(
+                    f"whatsapp_number.eq.{term},whatsapp_number.eq.{clean_phone},teacher_name.ilike.%{term}%,id.eq.{term}"
+                ).order("created_at", desc=True).limit(1).execute()
+                if res.data:
+                    lead = res.data[0]
+                    lead_user = {
+                        "id": lead["id"],
+                        "name": lead.get("teacher_name", "Educator"),
+                        "school": lead.get("school_name", "School"),
+                        "city": lead.get("city", "City"),
+                        "email": term if "@" in term else f"{clean_phone}@school.edu",
+                        "whatsapp": lead.get("whatsapp_number", term),
+                        "primary_grade": 10,
+                        "primary_subject": "Mathematics"
+                    }
+                    # Cache in local SQLite
+                    try:
+                        with sqlite3.connect(SQLITE_DB_PATH) as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            INSERT OR REPLACE INTO teacher_accounts (id, name, school, city, email, whatsapp, primary_grade, primary_subject)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (
+                                lead_user["id"], lead_user["name"], lead_user["school"],
+                                lead_user["city"], lead_user["email"], lead_user["whatsapp"],
+                                lead_user["primary_grade"], lead_user["primary_subject"]
+                            ))
+                            conn.commit()
+                    except Exception:
+                        pass
+                    return lead_user
+            except Exception as se:
+                logger.warning(f"Supabase login search failed: {se}")
+
         return None
 
     def get_teacher_stats(self, identifier: str) -> Dict[str, Any]:

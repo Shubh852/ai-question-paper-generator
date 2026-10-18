@@ -57,6 +57,11 @@ export default function Home() {
 
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out of this educator profile?')) {
+      const lastId = teacherUser?.whatsapp || teacherUser?.email;
+      if (lastId) {
+        localStorage.setItem('cbse_last_identifier', lastId);
+      }
+      localStorage.setItem('cbse_has_registered', 'true');
       localStorage.removeItem('cbse_auth_teacher');
       setTeacherUser(null);
       setTeacherPaperCount(null);

@@ -67,7 +67,7 @@ export default function SavedPapersDashboard({
     }
   };
 
-  const handleDownload = async (id: string, type: 'student' | 'solution', title: string) => {
+  const handleDownload = async (id: string, type: 'student' | 'solution' | 'combined', title: string) => {
     setDownloadingId(`${id}-${type}`);
     try {
       const url = `/api/v1/download-pdf/${id}?doc=${type}`;
@@ -77,7 +77,8 @@ export default function SavedPapersDashboard({
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `${title.replace(/\s+/g, '_')}_${type === 'solution' ? 'Solution_Scheme' : 'Student_Paper'}.pdf`;
+      const typeSuffix = type === 'solution' ? 'Solution_Scheme' : type === 'combined' ? 'Complete_Exam_Kit' : 'Student_Paper';
+      a.download = `${title.replace(/\s+/g, '_')}_${typeSuffix}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -334,6 +335,14 @@ export default function SavedPapersDashboard({
                       {isDownloadingSolution ? '⏳ Building...' : '📋 Solutions'}
                     </button>
                   </div>
+
+                  <button
+                    onClick={() => handleDownload(exam.id, 'combined', exam.title)}
+                    disabled={downloadingId === `${exam.id}-combined`}
+                    className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-bold text-purple-700 transition hover:bg-purple-100 disabled:opacity-50"
+                  >
+                    {downloadingId === `${exam.id}-combined` ? '⏳ Compiling Full Kit...' : '📦 Combined (Paper + Solutions)'}
+                  </button>
 
                   {onLoadExamToPreview && (
                     <button

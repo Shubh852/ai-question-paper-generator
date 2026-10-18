@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   GraduationCap, 
@@ -55,6 +55,18 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
+  // Check if educator previously registered or logged in
+  useEffect(() => {
+    try {
+      const hasRegistered = localStorage.getItem('cbse_has_registered');
+      const lastId = localStorage.getItem('cbse_last_identifier');
+      if (hasRegistered === 'true' || lastId) {
+        setMode('login');
+        if (lastId) setLoginIdentifier(lastId);
+      }
+    } catch {}
+  }, []);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -89,6 +101,8 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
       const data = await res.json();
       const user: TeacherUser = data.user;
       localStorage.setItem('cbse_auth_teacher', JSON.stringify(user));
+      localStorage.setItem('cbse_has_registered', 'true');
+      localStorage.setItem('cbse_last_identifier', whatsapp.trim() || email.trim());
       onAuthenticated(user);
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration.');
@@ -125,6 +139,8 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
       const data = await res.json();
       const user: TeacherUser = data.user;
       localStorage.setItem('cbse_auth_teacher', JSON.stringify(user));
+      localStorage.setItem('cbse_has_registered', 'true');
+      localStorage.setItem('cbse_last_identifier', loginIdentifier.trim());
       onAuthenticated(user);
     } catch (err: any) {
       setError(err.message || 'Could not sign in.');
@@ -198,25 +214,27 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
         <div className="flex border-b border-slate-200 bg-slate-50/80 px-6 pt-3">
           <button
             type="button"
-            onClick={() => { setMode('signup'); setError(null); }}
-            className={`flex-1 pb-3 text-sm font-bold transition-all border-b-2 ${
-              mode === 'signup'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Create Teacher Account (Sign Up)
-          </button>
-          <button
-            type="button"
             onClick={() => { setMode('login'); setError(null); }}
-            className={`flex-1 pb-3 text-sm font-bold transition-all border-b-2 ${
+            className={`flex-1 pb-3 text-sm font-bold transition-all border-b-2 flex items-center justify-center space-x-1.5 ${
               mode === 'login'
                 ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            Existing Teacher (Sign In)
+            <Lock className="h-4 w-4" />
+            <span>Teacher Sign In (Log In)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('signup'); setError(null); }}
+            className={`flex-1 pb-3 text-sm font-bold transition-all border-b-2 flex items-center justify-center space-x-1.5 ${
+              mode === 'signup'
+                ? 'border-blue-600 text-blue-700'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <User className="h-4 w-4" />
+            <span>Create Account (Sign Up)</span>
           </button>
         </div>
 
@@ -392,6 +410,17 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
                 <span>{loading ? 'Creating Educator Account...' : 'Complete Teacher Sign Up & Enter Studio'}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
+
+              <div className="text-center text-xs text-slate-500 pt-2">
+                Already registered on this portal?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(null); }}
+                  className="font-bold text-blue-600 hover:underline"
+                >
+                  Sign In to your account
+                </button>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
@@ -404,7 +433,7 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
                   <input
                     type="text"
                     required
-                    placeholder="e.g. ananya.sharma@dps.edu.in or 9876543210"
+                    placeholder="e.g. +91 78289 02970 or teacher@school.edu"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -414,7 +443,7 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Password
+                  Password (Optional)
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -443,6 +472,17 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
                 <span>{loading ? 'Authenticating...' : 'Sign In as Teacher'}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
+
+              <div className="text-center text-xs text-slate-500 pt-2">
+                First time using CBSE PaperGen?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('signup'); setError(null); }}
+                  className="font-bold text-blue-600 hover:underline"
+                >
+                  Create New Teacher Account
+                </button>
+              </div>
             </form>
           )}
 

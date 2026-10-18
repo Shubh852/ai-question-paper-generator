@@ -25,7 +25,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from backend.database import db
 from engine.assembler import ExamAssembler, BLUEPRINT_PRESETS
-from engine.typesetter import generate_student_typst, generate_solution_typst, compile_to_pdf
+from engine.typesetter import generate_student_typst, generate_solution_typst, generate_combined_typst, compile_to_pdf
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("api")
@@ -293,6 +293,14 @@ def export_pdf(req: ExportPdfRequest):
                 media_type="application/pdf",
                 headers={"Content-Disposition": f"attachment; filename=Marking_Scheme_{exam.get('grade_level', 10)}_{exam.get('subject', 'Paper')}.pdf"}
             )
+        elif target in ("combined", "both"):
+            typst_code = generate_combined_typst(exam, exam.get("sections", {}))
+            pdf_bytes = compile_to_pdf(typst_code)
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=Complete_Paper_and_Solutions_{exam.get('grade_level', 10)}_{exam.get('subject', 'Paper')}.pdf"}
+            )
         else:
             # Return both as base64
             stud_typ = generate_student_typst(exam, exam.get("sections", {}))
@@ -324,6 +332,9 @@ def download_pdf(paper_id: str, doc: str = Query("student")):
     if doc == "solution":
         typst_code = generate_solution_typst(paper, paper.get("sections", {}))
         filename = f"Marking_Scheme_{paper.get('grade_level')}_{paper.get('subject')}.pdf"
+    elif doc in ("combined", "both"):
+        typst_code = generate_combined_typst(paper, paper.get("sections", {}))
+        filename = f"Complete_Exam_Kit_{paper.get('grade_level')}_{paper.get('subject')}.pdf"
     else:
         typst_code = generate_student_typst(paper, paper.get("sections", {}))
         filename = f"Question_Paper_{paper.get('grade_level')}_{paper.get('subject')}.pdf"

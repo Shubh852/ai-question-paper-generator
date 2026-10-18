@@ -313,7 +313,7 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
   };
 
   // Direct PDF Download (1-Click for Authenticated Teachers)
-  const triggerPdfDownload = async (docType: 'student' | 'solution') => {
+  const triggerPdfDownload = async (docType: 'student' | 'solution' | 'combined') => {
     if (!examPaper) return;
 
     try {
@@ -355,7 +355,8 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${docType === 'solution' ? 'Marking_Scheme' : 'Question_Paper'}_Class${selectedGrade}_${selectedSubject}.pdf`;
+      const prefix = docType === 'solution' ? 'Marking_Scheme' : docType === 'combined' ? 'Complete_Exam_Kit' : 'Question_Paper';
+      a.download = `${prefix}_Class${selectedGrade}_${selectedSubject}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -365,7 +366,7 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
     }
   };
 
-  const handleDownloadClick = (docType: 'student' | 'solution') => {
+  const handleDownloadClick = (docType: 'student' | 'solution' | 'combined') => {
     // 1-Click instant download for educator without any prompt
     triggerPdfDownload(docType);
   };
@@ -1085,6 +1086,15 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
               >
                 <Download className="h-3.5 w-3.5" />
                 <span>Marking Scheme (PDF)</span>
+              </button>
+
+              <button
+                onClick={() => handleDownloadClick('combined')}
+                className="flex items-center space-x-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all"
+                title="Download Question Paper and Complete Marking Scheme combined in one single PDF"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Paper + Solutions (PDF)</span>
               </button>
 
               <button

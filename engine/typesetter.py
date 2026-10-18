@@ -130,31 +130,48 @@ def latex_to_typst_math(math_content: str) -> str:
 
 def sanitize_typst_text(text: str) -> str:
     """
-    Format question statement for Typst, converting LaTeX $...$ and $$...$$
-    into native Typst math expressions and escaping special Typst markup.
+    Format question statement and solutions for Typst, converting LaTeX $...$ and $$...$$
+    into native Typst math expressions and escaping special Typst markup characters (*, _, #, @, etc.)
+    in the prose parts so that Typst never throws 'unclosed delimiter' errors.
     """
     if not text:
         return ""
 
-    # Replace display math $$...$$
+    # Clean known Unicode replacement artifacts
+    text = text.replace("\ufffd", "")
+
+    # Tokenize math blocks ($...$ and $$...$$) to protect formulas
+    math_tokens = []
+
     def repl_display_math(match):
         inner = match.group(1).strip()
-        converted = latex_to_typst_math(inner)
-        return f"\n$ {converted} $\n"
+        conv = latex_to_typst_math(inner)
+        math_tokens.append(f"\n$ {conv} $\n")
+        return f"__TYPST_MATH_TOKEN_{len(math_tokens)-1}__"
 
-    # Replace inline math $...$
     def repl_inline_math(match):
         inner = match.group(1).strip()
-        converted = latex_to_typst_math(inner)
-        return f"${converted}$"
+        conv = latex_to_typst_math(inner)
+        math_tokens.append(f"${conv}$")
+        return f"__TYPST_MATH_TOKEN_{len(math_tokens)-1}__"
 
-    # Protect double dollar first
+    # Save display math first
     processed = re.sub(r"\$\$(.*?)\$\$", repl_display_math, text, flags=re.DOTALL)
-    # Then inline single dollar
+    # Save inline single dollar math
     processed = re.sub(r"\$([^\$\n]+?)\$", repl_inline_math, processed)
 
-    # Clean line breaks
+    # In prose: escape Typst markup delimiters that cause parser breaks
+    processed = processed.replace("*", r"\*")
+    processed = processed.replace("_", r"\_")
+    processed = processed.replace("#", r"\#")
+    processed = processed.replace("@", r"\@")
+    processed = processed.replace("<", r"\<").replace(">", r"\>")
     processed = processed.replace(r"\\", "\n")
+
+    # Restore math tokens
+    for idx, tok in enumerate(math_tokens):
+        processed = processed.replace(f"__TYPST_MATH_TOKEN_{idx}__", tok)
+
     return processed
 
 def resolve_asset_path(raw_path: str) -> Optional[str]:
@@ -431,6 +448,27 @@ def generate_solution_typst(exam: Dict[str, Any], questions_by_section: Dict[str
             q_num += 1
 
     return "\n".join(typ)
+
+def generate_combined_typst(exam: Dict[str, Any], questions_by_section: Dict[str, List[Dict[str, Any]]]) -> str:
+    """
+    Generates a unified CBSE Examination Kit containing:
+    1. Student Question Paper (with official Instructions and Sections A-E)
+    2. Page break
+    3. Official Evaluator Marking Scheme & Model Solutions
+    """
+    student_typ = generate_student_typst(exam, questions_by_section)
+    solution_typ = generate_solution_typst(exam, questions_by_section)
+
+    # Strip preamble directives (#set ...) from solution part to maintain formatting flow
+    sol_lines = []
+    in_preamble = True
+    for line in solution_typ.split("\n"):
+        if in_preamble and (line.startswith("#set page") or line.startswith("#set text") or line.startswith("#set par")):
+            continue
+        in_preamble = False
+        sol_lines.append(line)
+
+    return student_typ + "\n\n#pagebreak()\n\n" + "\n".join(sol_lines)
 
 def compile_to_pdf(typst_content: str, output_path: Optional[str] = None) -> bytes:
     """
