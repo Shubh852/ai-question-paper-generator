@@ -138,15 +138,15 @@ def sanitize_typst_text(text: str) -> str:
 
     # Replace display math $$...$$
     def repl_display_math(match):
-        inner = match.group(1)
+        inner = match.group(1).strip()
         converted = latex_to_typst_math(inner)
-        return f"\n\n$ {converted} $\n\n"
+        return f"\n$ {converted} $\n"
 
     # Replace inline math $...$
     def repl_inline_math(match):
-        inner = match.group(1)
+        inner = match.group(1).strip()
         converted = latex_to_typst_math(inner)
-        return f" $ {converted} $ "
+        return f"${converted}$"
 
     # Protect double dollar first
     processed = re.sub(r"\$\$(.*?)\$\$", repl_display_math, text, flags=re.DOTALL)
@@ -339,7 +339,11 @@ def generate_student_typst(exam: Dict[str, Any], questions_by_section: Dict[str,
                 opt_b = sanitize_typst_text(str(opts.get("B", "")))
                 opt_c = sanitize_typst_text(str(opts.get("C", "")))
                 opt_d = sanitize_typst_text(str(opts.get("D", "")))
-                typ.append(f'      #grid(columns: (1fr, 1fr), row-gutter: 4pt, [(A) {opt_a}], [(B) {opt_b}], [(C) {opt_c}], [(D) {opt_d}])')
+                max_opt_len = max(len(opt_a), len(opt_b), len(opt_c), len(opt_d))
+                if max_opt_len <= 15:
+                    typ.append(f'      #grid(columns: (1fr, 1fr, 1fr, 1fr), row-gutter: 4pt, [(A) {opt_a}], [(B) {opt_b}], [(C) {opt_c}], [(D) {opt_d}])')
+                else:
+                    typ.append(f'      #grid(columns: (1fr, 1fr), row-gutter: 4pt, [(A) {opt_a}], [(B) {opt_b}], [(C) {opt_c}], [(D) {opt_d}])')
 
             typ.append(f'    ],')
             typ.append(f'    [#align(right)[*[{marks}]*]]')

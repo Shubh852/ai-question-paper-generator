@@ -21,8 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 SQLITE_DB_PATH = DATA_DIR / "question_bank.db"
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL") or "https://kwlrfcogywkmrhyzusqg.supabase.co"
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "sb_publishable_74OMgqGqC1xxAN-rGY5_qg_EhyDwtEJ"
 
 class Database:
     def __init__(self):
