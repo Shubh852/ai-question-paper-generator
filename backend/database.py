@@ -9,9 +9,10 @@ import uuid
 import sqlite3
 import hashlib
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -680,10 +681,18 @@ class Database:
 
         if self.use_supabase:
             try:
+                school_raw = teacher_data.get("school", "School")
+                email_raw = teacher_data.get("email", "").strip()
+                # Persist credentials in school_name as {school}||{email}||{pwd_hash}
+                if pwd_hash and email_raw:
+                    persisted_school = f"{school_raw}||{email_raw}||{pwd_hash}"
+                else:
+                    persisted_school = school_raw
+
                 self.client.table("teacher_leads").upsert({
                     "id": teacher_id,
                     "teacher_name": teacher_data.get("name", "Educator"),
-                    "school_name": teacher_data.get("school", "School"),
+                    "school_name": persisted_school,
                     "city": teacher_data.get("city", "City"),
                     "whatsapp_number": teacher_data.get("whatsapp", "")
                 }).execute()
@@ -701,9 +710,17 @@ class Database:
             "primary_subject": str(teacher_data.get("primary_subject", "Mathematics"))
         }
 
-    def login_teacher(self, email_or_phone: str, password: str = "") -> Optional[Dict[str, Any]]:
-        """Validates or finds existing teacher account by email or whatsapp in SQLite and Supabase."""
+    def login_teacher(self, email_or_phone: str, password: str = "") -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        """
+        Validates educator credentials against SQLite and Supabase.
+        Returns: (user_dict, error_code)
+        error_code: None (success), "NOT_FOUND", or "WRONG_PASSWORD".
+        """
         term = email_or_phone.strip()
+        clean_phone = re.sub(r"[^\d+]", "", term)
+        input_hash = hashlib.sha256(password.strip().encode()).hexdigest() if password else ""
+
+        # 1. Search local SQLite teacher_accounts
         with sqlite3.connect(SQLITE_DB_PATH) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -715,7 +732,11 @@ class Database:
             row = cursor.fetchone()
             if row:
                 t = dict(row)
-                return {
+                stored_hash = t.get("password_hash")
+                if stored_hash:
+                    if input_hash != stored_hash:
+                        return (None, "WRONG_PASSWORD")
+                return ({
                     "id": t["id"],
                     "name": t["name"],
                     "school": t["school"],
@@ -724,23 +745,50 @@ class Database:
                     "whatsapp": t["whatsapp"],
                     "primary_grade": t.get("primary_grade", 10),
                     "primary_subject": t.get("primary_subject", "Mathematics")
-                }
+                }, None)
 
-        # Query Supabase cloud leads if not cached locally in SQLite
+        # 2. Query Supabase cloud leads
         if self.use_supabase:
             try:
-                clean_phone = re.sub(r"[^\d+]", "", term)
-                res = self.client.table("teacher_leads").select("*").or_(
-                    f"whatsapp_number.eq.{term},whatsapp_number.eq.{clean_phone},teacher_name.ilike.%{term}%,id.eq.{term}"
-                ).order("created_at", desc=True).limit(1).execute()
+                search_terms = [
+                    f"whatsapp_number.eq.{term}"
+                ]
+                if re.match(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", term):
+                    search_terms.append(f"id.eq.{term}")
+                if clean_phone and len(clean_phone) >= 8:
+                    search_terms.append(f"whatsapp_number.eq.{clean_phone}")
+                if "@" in term:
+                    search_terms.append(f"school_name.ilike.%||{term}||%")
+                else:
+                    search_terms.append(f"teacher_name.ilike.%{term}%")
+
+                or_query = ",".join(search_terms)
+                res = self.client.table("teacher_leads").select("*").or_(or_query).order("created_at", desc=True).limit(1).execute()
                 if res.data:
                     lead = res.data[0]
+                    school_raw = lead.get("school_name", "School")
+                    stored_email = term if "@" in term else ""
+                    stored_hash = None
+                    clean_school = school_raw
+
+                    if "||" in school_raw:
+                        parts = school_raw.split("||")
+                        clean_school = parts[0]
+                        if len(parts) > 1 and parts[1]:
+                            stored_email = parts[1]
+                        if len(parts) > 2 and parts[2]:
+                            stored_hash = parts[2]
+
+                    if stored_hash:
+                        if input_hash != stored_hash:
+                            return (None, "WRONG_PASSWORD")
+
                     lead_user = {
                         "id": lead["id"],
                         "name": lead.get("teacher_name", "Educator"),
-                        "school": lead.get("school_name", "School"),
+                        "school": clean_school,
                         "city": lead.get("city", "City"),
-                        "email": term if "@" in term else f"{clean_phone}@school.edu",
+                        "email": stored_email or (term if "@" in term else f"{clean_phone}@school.edu"),
                         "whatsapp": lead.get("whatsapp_number", term),
                         "primary_grade": 10,
                         "primary_subject": "Mathematics"
@@ -750,25 +798,26 @@ class Database:
                         with sqlite3.connect(SQLITE_DB_PATH) as conn:
                             cursor = conn.cursor()
                             cursor.execute("""
-                            INSERT OR REPLACE INTO teacher_accounts (id, name, school, city, email, whatsapp, primary_grade, primary_subject)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT OR REPLACE INTO teacher_accounts (id, name, school, city, email, whatsapp, password_hash, primary_grade, primary_subject)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """, (
                                 lead_user["id"], lead_user["name"], lead_user["school"],
                                 lead_user["city"], lead_user["email"], lead_user["whatsapp"],
+                                stored_hash or input_hash,
                                 lead_user["primary_grade"], lead_user["primary_subject"]
                             ))
                             conn.commit()
                     except Exception:
                         pass
-                    return lead_user
+                    return (lead_user, None)
             except Exception as se:
                 logger.warning(f"Supabase login search failed: {se}")
 
-        return None
+        return (None, "NOT_FOUND")
 
     def get_teacher_stats(self, identifier: str) -> Dict[str, Any]:
         """Returns educator profile and total papers created count from Supabase & SQLite."""
-        teacher = self.login_teacher(identifier)
+        teacher, _ = self.login_teacher(identifier)
         term = identifier.strip()
         papers_count = 0
 

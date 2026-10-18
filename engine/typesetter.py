@@ -147,13 +147,13 @@ def sanitize_typst_text(text: str) -> str:
         inner = match.group(1).strip()
         conv = latex_to_typst_math(inner)
         math_tokens.append(f"\n$ {conv} $\n")
-        return f"__TYPST_MATH_TOKEN_{len(math_tokens)-1}__"
+        return f"TYPSTMATHPH{len(math_tokens)-1}END"
 
     def repl_inline_math(match):
         inner = match.group(1).strip()
         conv = latex_to_typst_math(inner)
-        math_tokens.append(f"${conv}$")
-        return f"__TYPST_MATH_TOKEN_{len(math_tokens)-1}__"
+        math_tokens.append(f" ${conv}$ ")
+        return f"TYPSTMATHPH{len(math_tokens)-1}END"
 
     # Save display math first
     processed = re.sub(r"\$\$(.*?)\$\$", repl_display_math, text, flags=re.DOTALL)
@@ -170,7 +170,7 @@ def sanitize_typst_text(text: str) -> str:
 
     # Restore math tokens
     for idx, tok in enumerate(math_tokens):
-        processed = processed.replace(f"__TYPST_MATH_TOKEN_{idx}__", tok)
+        processed = processed.replace(f"TYPSTMATHPH{idx}END", tok)
 
     return processed
 

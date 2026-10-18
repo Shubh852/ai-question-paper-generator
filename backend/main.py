@@ -78,13 +78,13 @@ class TeacherSignupRequest(BaseModel):
     city: str = Field(..., example="New Delhi")
     email: str = Field(..., example="ananya.sharma@dps.edu.in")
     whatsapp: str = Field(..., example="+919876543210")
-    password: Optional[str] = Field(default="")
+    password: str = Field(..., min_length=4, example="password123")
     primary_grade: Optional[int] = Field(default=10)
     primary_subject: Optional[str] = Field(default="Mathematics")
 
 class TeacherLoginRequest(BaseModel):
     email_or_phone: str = Field(..., example="ananya.sharma@dps.edu.in")
-    password: Optional[str] = Field(default="")
+    password: str = Field(..., example="password123")
 
 class SwapQuestionRequest(BaseModel):
     current_question_id: str
@@ -428,21 +428,31 @@ def teacher_signup(req: TeacherSignupRequest):
 @app.post("/api/v1/auth/login")
 def teacher_login(req: TeacherLoginRequest):
     """
-    Authenticates teacher by email or WhatsApp number.
+    Authenticates teacher by email or WhatsApp number with strict password verification.
     """
-    user = db.login_teacher(email_or_phone=req.email_or_phone, password=req.password)
+    if not req.email_or_phone or not req.email_or_phone.strip():
+        raise HTTPException(status_code=400, detail="Please enter your registered email address or WhatsApp number.")
+    if not req.password or not req.password.strip():
+        raise HTTPException(status_code=400, detail="Please enter your account password.")
+
+    user, err = db.login_teacher(email_or_phone=req.email_or_phone, password=req.password)
+    
+    if err == "NOT_FOUND":
+        raise HTTPException(
+            status_code=404, 
+            detail="No educator account found with this email or WhatsApp number. Please sign up to create an account."
+        )
+    if err == "WRONG_PASSWORD":
+        raise HTTPException(
+            status_code=401, 
+            detail="Incorrect password. Please verify your credentials and try again."
+        )
     if not user:
-        # If not registered, create profile seamlessly on demand
-        user = db.register_teacher({
-            "name": req.email_or_phone.split("@")[0].capitalize() if "@" in req.email_or_phone else "Educator",
-            "school": "Delhi Public School",
-            "city": "New Delhi",
-            "email": req.email_or_phone if "@" in req.email_or_phone else f"{req.email_or_phone}@school.edu",
-            "whatsapp": req.email_or_phone if not "@" in req.email_or_phone else "+919876543210",
-        })
+        raise HTTPException(status_code=400, detail="Authentication failed. Please verify your credentials.")
+
     return {
         "status": "success",
-        "message": "Welcome back, Educator!",
+        "message": f"Welcome back, {user.get('name', 'Educator')}!",
         "user": user
     }
 

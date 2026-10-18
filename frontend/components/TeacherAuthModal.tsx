@@ -71,8 +71,13 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
     e.preventDefault();
     setError(null);
 
-    if (!name.trim() || !school.trim() || !city.trim() || !email.trim() || !whatsapp.trim()) {
-      setError('Please fill in all required teacher information.');
+    if (!name.trim() || !school.trim() || !city.trim() || !email.trim() || !whatsapp.trim() || !password.trim()) {
+      setError('Please fill in all required fields including password.');
+      return;
+    }
+
+    if (password.trim().length < 4) {
+      setError('Password must be at least 4 characters long.');
       return;
     }
 
@@ -117,6 +122,11 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
 
     if (!loginIdentifier.trim()) {
       setError('Please enter your email or WhatsApp number.');
+      return;
+    }
+
+    if (!loginPassword.trim()) {
+      setError('Please enter your account password.');
       return;
     }
 
@@ -347,13 +357,15 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
                 {/* Password */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Create Password
+                    Create Password <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
+                      required
+                      minLength={4}
+                      placeholder="Min. 4 characters"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full rounded-xl border border-slate-200 pl-9 pr-9 py-2 text-xs font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -443,13 +455,14 @@ export default function TeacherAuthModal({ onAuthenticated, isModal = true }: Te
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Password (Optional)
+                  Account Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    required
+                    placeholder="Enter your password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 pl-9 pr-9 py-2 text-xs font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
