@@ -80,9 +80,17 @@ interface ExamPaper {
 interface WizardProps {
   initialExam?: ExamPaper | null;
   onViewSavedPapers?: () => void;
+  currentUser?: {
+    id: string;
+    name: string;
+    school: string;
+    city: string;
+    email: string;
+    whatsapp: string;
+  } | null;
 }
 
-export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps = {}) {
+export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: WizardProps = {}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [taxonomy, setTaxonomy] = useState<TaxonomyItem[]>([]);
   const [loadingTaxonomy, setLoadingTaxonomy] = useState(true);
@@ -101,7 +109,7 @@ export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps =
   const [totalMarks, setTotalMarks] = useState<number>(25);
   const [examTitle, setExamTitle] = useState<string>('Unit Assessment Test');
   const [difficulty, setDifficulty] = useState({ easy: 40, medium: 40, hard: 20 });
-  const [schoolName, setSchoolName] = useState<string>('Delhi Public School');
+  const [schoolName, setSchoolName] = useState<string>(currentUser?.school || 'Delhi Public School');
   const [schoolLogoUrl, setSchoolLogoUrl] = useState<string>('/logos/default_school_logo.svg');
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -200,8 +208,12 @@ export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps =
   }, [availableChapters]);
 
   // Handle Generate Blueprint
-  const handleGenerate = async () => {
-    if (selectedChapters.length === 0) {
+  const handleGenerate = async (isRegenerating: boolean = false) => {
+    const chaptersToUse = selectedChapters.length > 0 
+      ? selectedChapters 
+      : (examPaper?.selected_chapters || []);
+
+    if (chaptersToUse.length === 0) {
       alert('Please select at least one chapter');
       return;
     }
@@ -214,7 +226,7 @@ export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps =
         body: JSON.stringify({
           grade: selectedGrade,
           subject: selectedSubject,
-          chapters: selectedChapters,
+          chapters: chaptersToUse,
           topics: selectedTopics.length > 0 ? selectedTopics : undefined,
           exam_type: targetExam,
           total_marks: totalMarks,
@@ -222,6 +234,8 @@ export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps =
           title: examTitle || `Class ${selectedGrade} ${selectedSubject} Assessment`,
           school_name: schoolName,
           school_logo: schoolLogoUrl,
+          exclude_question_ids: isRegenerating && examPaper?.question_ids ? examPaper.question_ids : undefined,
+          created_by: currentUser?.name || undefined,
         }),
       });
 
@@ -1015,7 +1029,7 @@ export default function Wizard({ initialExam, onViewSavedPapers }: WizardProps =
 
             <div className="flex flex-wrap items-center gap-2.5">
               <button
-                onClick={handleGenerate}
+                onClick={() => handleGenerate(true)}
                 disabled={generating}
                 className="flex items-center space-x-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all disabled:opacity-50"
                 title="Shuffle and draw a fresh combination of questions adhering to this blueprint"

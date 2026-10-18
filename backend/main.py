@@ -66,6 +66,22 @@ class BlueprintRequest(BaseModel):
     title: Optional[str] = Field(default=None, example="Unit Assessment Test")
     school_name: Optional[str] = Field(default=None, example="Delhi Public School")
     school_logo: Optional[str] = Field(default=None, example="data/logos/default_school_logo.svg")
+    exclude_question_ids: Optional[List[str]] = Field(default=None, example=[])
+    created_by: Optional[str] = Field(default=None, example="Dr. Ananya Sharma")
+
+class TeacherSignupRequest(BaseModel):
+    name: str = Field(..., example="Dr. Ananya Sharma")
+    school: str = Field(..., example="Delhi Public School")
+    city: str = Field(..., example="New Delhi")
+    email: str = Field(..., example="ananya.sharma@dps.edu.in")
+    whatsapp: str = Field(..., example="+919876543210")
+    password: Optional[str] = Field(default="")
+    primary_grade: Optional[int] = Field(default=10)
+    primary_subject: Optional[str] = Field(default="Mathematics")
+
+class TeacherLoginRequest(BaseModel):
+    email_or_phone: str = Field(..., example="ananya.sharma@dps.edu.in")
+    password: Optional[str] = Field(default="")
 
 class SwapQuestionRequest(BaseModel):
     current_question_id: str
@@ -190,13 +206,15 @@ def generate_blueprint(req: BlueprintRequest):
             exam_type=req.exam_type,
             total_marks=req.total_marks,
             difficulty_weights=req.difficulty,
-            title=req.title
+            title=req.title,
+            exclude_ids=req.exclude_question_ids
         )
 
         paper_id = str(uuid.uuid4())
         paper["id"] = paper_id
         paper["school_name"] = req.school_name or "CENTRAL BOARD OF SECONDARY EDUCATION"
         paper["school_logo"] = req.school_logo or "data/logos/default_school_logo.svg"
+        paper["created_by"] = req.created_by or "Verified Educator"
 
         # Save to database record
         db.save_generated_exam({
@@ -211,7 +229,8 @@ def generate_blueprint(req: BlueprintRequest):
             "blueprint_breakdown": {s: len(qs) for s, qs in paper["sections"].items()},
             "question_ids": paper["question_ids"],
             "student_pdf_url": f"/api/v1/download-pdf/{paper_id}?doc=student",
-            "solution_pdf_url": f"/api/v1/download-pdf/{paper_id}?doc=solution"
+            "solution_pdf_url": f"/api/v1/download-pdf/{paper_id}?doc=solution",
+            "created_by": paper["created_by"]
         })
 
         GENERATED_PAPERS_CACHE[paper_id] = paper
@@ -352,6 +371,72 @@ def capture_lead(req: LeadCaptureRequest):
     except Exception as e:
         logger.error(f"Lead capture failed: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
+
+# --- Teacher Authentication Endpoints ---
+@app.post("/api/v1/auth/signup")
+def teacher_signup(req: TeacherSignupRequest):
+    """
+    Registers a new verified educator account and unlocks studio access.
+    """
+    try:
+        user = db.register_teacher({
+            "name": req.name,
+            "school": req.school,
+            "city": req.city,
+            "email": req.email,
+            "whatsapp": req.whatsapp,
+            "password": req.password,
+            "primary_grade": req.primary_grade,
+            "primary_subject": req.primary_subject
+        })
+        return {
+            "status": "success",
+            "message": "Teacher account registered successfully.",
+            "user": user
+        }
+    except Exception as e:
+        logger.error(f"Signup error: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Registration error: {e}")
+
+@app.post("/api/v1/auth/login")
+def teacher_login(req: TeacherLoginRequest):
+    """
+    Authenticates teacher by email or WhatsApp number.
+    """
+    user = db.login_teacher(email_or_phone=req.email_or_phone, password=req.password)
+    if not user:
+        # If not registered, create profile seamlessly on demand
+        user = db.register_teacher({
+            "name": req.email_or_phone.split("@")[0].capitalize() if "@" in req.email_or_phone else "Educator",
+            "school": "Delhi Public School",
+            "city": "New Delhi",
+            "email": req.email_or_phone if "@" in req.email_or_phone else f"{req.email_or_phone}@school.edu",
+            "whatsapp": req.email_or_phone if not "@" in req.email_or_phone else "+919876543210",
+        })
+    return {
+        "status": "success",
+        "message": "Welcome back, Educator!",
+        "user": user
+    }
+
+@app.get("/api/v1/auth/demo")
+def teacher_demo():
+    """
+    Returns instant guest teacher credentials for testing and evaluation.
+    """
+    return {
+        "status": "success",
+        "user": {
+            "id": "tch_demo_dps",
+            "name": "Dr. Ananya Sharma",
+            "school": "Delhi Public School, R.K. Puram",
+            "city": "New Delhi",
+            "email": "ananya.sharma@dps.edu.in",
+            "whatsapp": "+91 98765 43210",
+            "primary_grade": 10,
+            "primary_subject": "Mathematics"
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn

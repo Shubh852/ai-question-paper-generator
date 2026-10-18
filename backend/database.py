@@ -40,6 +40,7 @@ class Database:
                 self.client = client
                 self.use_supabase = True
                 logger.info(f"Connected to Supabase PostgreSQL at {SUPABASE_URL} (tables verified)")
+                self._init_sqlite()
                 return
             except Exception as e:
                 logger.warning(
@@ -108,6 +109,21 @@ class Database:
                 generated_exam_id TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (generated_exam_id) REFERENCES generated_exams(id)
+            );
+            """)
+
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS teacher_accounts (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                school TEXT NOT NULL,
+                city TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                whatsapp TEXT NOT NULL,
+                password_hash TEXT,
+                primary_grade INTEGER,
+                primary_subject TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
             """)
 
@@ -451,7 +467,8 @@ class Database:
 
         if self.use_supabase:
             try:
-                self.client.table("generated_exams").insert(exam_data).execute()
+                supa_payload = {k: v for k, v in exam_data.items() if k not in ("created_by",)}
+                self.client.table("generated_exams").insert(supa_payload).execute()
                 return exam_id
             except Exception as e:
                 logger.warning(f"Supabase exam insert failed: {e}")
@@ -624,6 +641,91 @@ class Database:
             conn.commit()
 
         return lead_id
+
+    def register_teacher(self, teacher_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Registers a new teacher account or updates profile."""
+        teacher_id = teacher_data.get("id") or str(uuid.uuid4())
+        pwd = teacher_data.get("password", "")
+        pwd_hash = hashlib.sha256(pwd.encode()).hexdigest() if pwd else None
+
+        with sqlite3.connect(SQLITE_DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+            INSERT OR REPLACE INTO teacher_accounts (
+                id, name, school, city, email, whatsapp, password_hash, primary_grade, primary_subject
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                teacher_id,
+                teacher_data.get("name", "Educator"),
+                teacher_data.get("school", "School"),
+                teacher_data.get("city", "City"),
+                teacher_data.get("email", ""),
+                teacher_data.get("whatsapp", ""),
+                pwd_hash,
+                int(teacher_data.get("primary_grade", 10)),
+                str(teacher_data.get("primary_subject", "Mathematics"))
+            ))
+            cursor.execute("""
+            INSERT OR IGNORE INTO teacher_leads (
+                id, teacher_name, school_name, city, whatsapp_number
+            ) VALUES (?, ?, ?, ?, ?)
+            """, (
+                teacher_id,
+                teacher_data.get("name", "Educator"),
+                teacher_data.get("school", "School"),
+                teacher_data.get("city", "City"),
+                teacher_data.get("whatsapp", "")
+            ))
+            conn.commit()
+
+        if self.use_supabase:
+            try:
+                self.client.table("teacher_leads").upsert({
+                    "id": teacher_id,
+                    "teacher_name": teacher_data.get("name", "Educator"),
+                    "school_name": teacher_data.get("school", "School"),
+                    "city": teacher_data.get("city", "City"),
+                    "whatsapp_number": teacher_data.get("whatsapp", "")
+                }).execute()
+            except Exception as e:
+                logger.warning(f"Supabase teacher lead sync: {e}")
+
+        return {
+            "id": teacher_id,
+            "name": teacher_data.get("name"),
+            "school": teacher_data.get("school"),
+            "city": teacher_data.get("city"),
+            "email": teacher_data.get("email"),
+            "whatsapp": teacher_data.get("whatsapp"),
+            "primary_grade": int(teacher_data.get("primary_grade", 10)),
+            "primary_subject": str(teacher_data.get("primary_subject", "Mathematics"))
+        }
+
+    def login_teacher(self, email_or_phone: str, password: str = "") -> Optional[Dict[str, Any]]:
+        """Validates or finds existing teacher account by email or whatsapp."""
+        term = email_or_phone.strip()
+        with sqlite3.connect(SQLITE_DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+            SELECT * FROM teacher_accounts 
+            WHERE email = ? OR whatsapp = ? OR email LIKE ? OR whatsapp LIKE ?
+            LIMIT 1
+            """, (term, term, f"%{term}%", f"%{term}%"))
+            row = cursor.fetchone()
+            if row:
+                t = dict(row)
+                return {
+                    "id": t["id"],
+                    "name": t["name"],
+                    "school": t["school"],
+                    "city": t["city"],
+                    "email": t["email"],
+                    "whatsapp": t["whatsapp"],
+                    "primary_grade": t.get("primary_grade", 10),
+                    "primary_subject": t.get("primary_subject", "Mathematics")
+                }
+        return None
 
 # Singleton instance
 db = Database()

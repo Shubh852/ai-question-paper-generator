@@ -149,11 +149,12 @@ class ExamAssembler:
         exam_type: str = "CBSE_BOARD",
         total_marks: int = 25,
         difficulty_weights: Optional[Dict[str, float]] = None,
-        title: Optional[str] = None
+        title: Optional[str] = None,
+        exclude_ids: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Assemble question list adhering to section blueprints, syllabus chapters,
-        and difficulty distribution.
+        and difficulty distribution. Supports exclude_ids for fresh paper regeneration.
         """
         spec = ExamAssembler.get_preset_spec(total_marks)
         sections_spec = spec["sections"]
@@ -164,7 +165,7 @@ class ExamAssembler:
             subject=subject,
             chapters=chapters if chapters else None,
             topics=topics if topics else None,
-            limit=400
+            limit=500
         )
 
         # Fallback to chapters if specific topics have insufficient questions
@@ -174,14 +175,18 @@ class ExamAssembler:
                 grade=grade,
                 subject=subject,
                 chapters=chapters if chapters else None,
-                limit=400
+                limit=500
             )
 
         if not candidates:
             raise ValueError(f"No questions found for Grade {grade} {subject} in chapters: {chapters}")
 
+        # Randomize candidate pool so each generation produces distinct question draws
+        random.shuffle(candidates)
+
         selected_questions_by_sec = {}
         used_ids = set()
+        excluded_set = set(exclude_ids or [])
         actual_total_marks = 0.0
 
         for sec_name, sec_info in sections_spec.items():
@@ -197,8 +202,12 @@ class ExamAssembler:
                 and (float(q["marks"]) == float(target_marks) or q["question_format"] in allowed_formats)
             ]
 
+            # Prefer questions not in the excluded (previous paper) set for true regeneration
+            fresh_pool = [q for q in pool if q["id"] not in excluded_set]
+            working_pool = fresh_pool if len(fresh_pool) >= target_count else pool
+
             # Prioritize matching exact marks first
-            exact_mark_pool = [q for q in pool if float(q["marks"]) == float(target_marks)]
+            exact_mark_pool = [q for q in working_pool if float(q["marks"]) == float(target_marks)]
             
             # Select required number
             chosen = []
@@ -207,7 +216,8 @@ class ExamAssembler:
             else:
                 chosen = list(exact_mark_pool)
                 # Fill remaining from broader pool
-                remaining = [q for q in pool if q not in chosen]
+                remaining = [q for q in working_pool if q not in chosen]
+                random.shuffle(remaining)
                 needed = target_count - len(chosen)
                 chosen.extend(remaining[:needed])
 
@@ -215,6 +225,7 @@ class ExamAssembler:
             if len(chosen) < target_count:
                 extra_needed = target_count - len(chosen)
                 fallback_pool = [q for q in candidates if q["id"] not in used_ids and q not in chosen]
+                random.shuffle(fallback_pool)
                 chosen.extend(fallback_pool[:extra_needed])
 
             for q in chosen:
