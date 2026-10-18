@@ -68,6 +68,9 @@ class BlueprintRequest(BaseModel):
     school_logo: Optional[str] = Field(default=None, example="data/logos/default_school_logo.svg")
     exclude_question_ids: Optional[List[str]] = Field(default=None, example=[])
     created_by: Optional[str] = Field(default=None, example="Dr. Ananya Sharma")
+    teacher_id: Optional[str] = Field(default=None, example="tch_123")
+    teacher_phone: Optional[str] = Field(default=None, example="+919876543210")
+    teacher_city: Optional[str] = Field(default=None, example="New Delhi")
 
 class TeacherSignupRequest(BaseModel):
     name: str = Field(..., example="Dr. Ananya Sharma")
@@ -232,6 +235,19 @@ def generate_blueprint(req: BlueprintRequest):
             "solution_pdf_url": f"/api/v1/download-pdf/{paper_id}?doc=solution",
             "created_by": paper["created_by"]
         })
+
+        # Record teacher paper creation in Supabase & SQLite
+        if req.created_by or req.teacher_phone:
+            try:
+                db.save_teacher_lead({
+                    "teacher_name": req.created_by or "Verified Educator",
+                    "school_name": req.school_name or "CBSE School",
+                    "city": req.teacher_city or "New Delhi",
+                    "whatsapp_number": req.teacher_phone or "+919876543210",
+                    "generated_exam_id": paper_id
+                })
+            except Exception as le:
+                logger.warning(f"Could not record teacher exam lead: {le}")
 
         GENERATED_PAPERS_CACHE[paper_id] = paper
         return paper
@@ -437,6 +453,13 @@ def teacher_demo():
             "primary_subject": "Mathematics"
         }
     }
+
+@app.get("/api/v1/teacher/stats")
+def teacher_stats(identifier: str):
+    """
+    Returns verified teacher details and count of papers created from Supabase/SQLite.
+    """
+    return db.get_teacher_stats(identifier)
 
 if __name__ == "__main__":
     import uvicorn

@@ -32,9 +32,10 @@ export interface TeacherUser {
 
 interface TeacherAuthModalProps {
   onAuthenticated: (user: TeacherUser) => void;
+  isModal?: boolean;
 }
 
-export default function TeacherAuthModal({ onAuthenticated }: TeacherAuthModalProps) {
+export default function TeacherAuthModal({ onAuthenticated, isModal = true }: TeacherAuthModalProps) {
   const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -160,9 +161,13 @@ export default function TeacherAuthModal({ onAuthenticated }: TeacherAuthModalPr
     }
   };
 
+  const wrapperClasses = isModal
+    ? "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-md overflow-y-auto"
+    : "w-full max-w-xl mx-auto";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-xl rounded-3xl bg-white shadow-2xl border border-slate-100 my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className={wrapperClasses}>
+      <div className="relative w-full max-w-xl rounded-3xl bg-white shadow-2xl border border-slate-100 my-4 sm:my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-800 px-6 py-6 text-white text-center relative">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner">

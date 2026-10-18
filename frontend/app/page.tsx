@@ -13,13 +13,18 @@ import {
   UserCheck, 
   LogOut, 
   School,
-  ShieldCheck
+  ShieldCheck,
+  CheckCircle2,
+  Layers,
+  FileCheck,
+  Zap
 } from 'lucide-react';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'create' | 'saved'>('create');
   const [loadedExam, setLoadedExam] = useState<any>(null);
   const [teacherUser, setTeacherUser] = useState<TeacherUser | null>(null);
+  const [teacherPaperCount, setTeacherPaperCount] = useState<number | null>(null);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
 
   useEffect(() => {
@@ -35,10 +40,27 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch teacher stats (papers count) from Supabase / SQLite
+  useEffect(() => {
+    if (teacherUser?.whatsapp || teacherUser?.email || teacherUser?.id) {
+      const id = teacherUser.whatsapp || teacherUser.email || teacherUser.id;
+      fetch(`/api/v1/teacher/stats?identifier=${encodeURIComponent(id)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && typeof data.total_papers_created === 'number') {
+            setTeacherPaperCount(data.total_papers_created);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [teacherUser, activeTab]);
+
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out of this educator profile?')) {
       localStorage.removeItem('cbse_auth_teacher');
       setTeacherUser(null);
+      setTeacherPaperCount(null);
+      setActiveTab('create');
     }
   };
 
@@ -57,13 +79,129 @@ export default function Home() {
     }
   };
 
+  // 1. DEDICATED TEACHER PORTAL GATE (Shown before login)
+  if (isAuthLoaded && !teacherUser) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col justify-between">
+        {/* Top Portal Nav */}
+        <header className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/40">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-base font-black tracking-tight text-white">
+                  CBSE<span className="text-blue-400">PaperGen</span>
+                </span>
+                <span className="rounded-full bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 text-[10px] font-bold text-blue-300">
+                  Educator Portal
+                </span>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center space-x-3 text-xs font-semibold text-slate-300">
+              <div className="flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Supabase Database Online</span>
+              </div>
+              <div className="flex items-center space-x-1 text-slate-400">
+                <GraduationCap className="h-4 w-4 text-blue-400" />
+                <span>Classes 10, 11 & 12</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Hero & Login/Signup Grid */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center flex-1">
+          {/* Left Column: Platform Showcase */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="inline-flex items-center space-x-2 rounded-full bg-blue-500/10 border border-blue-400/20 px-3.5 py-1 text-xs font-semibold text-blue-300">
+              <Cpu className="h-3.5 w-3.5 text-blue-400" />
+              <span>Autonomous CBSE Curriculum Engine • 2025-2026 Blueprint</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+              CBSE Teacher Portal & Question Paper Studio
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+              Create an educator profile or log in below to assemble Board exams, chapter tests, 
+              and step-wise marking schemes with embedded vector diagrams and your school crest.
+            </p>
+
+            {/* Feature Highlights Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-xs">
+                <div className="flex items-center space-x-2 text-blue-400 font-bold text-xs mb-1">
+                  <Layers className="h-4 w-4" />
+                  <span>2,761+ Questions</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Pre-loaded CBSE question bank covering Classes 10, 11 & 12 in Math & Science.
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-xs">
+                <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs mb-1">
+                  <FileCheck className="h-4 w-4" />
+                  <span>Sections A to E</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Strict section breakdown: MCQs, VSA (2M), SA (3M), LA (5M), and Case-Based (4M).
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-xs">
+                <div className="flex items-center space-x-2 text-amber-400 font-bold text-xs mb-1">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>Step-Wise Rubrics</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Automated marking schemes with fractional mark allocations for accurate grading.
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-xs">
+                <div className="flex items-center space-x-2 text-purple-400 font-bold text-xs mb-1">
+                  <Bookmark className="h-4 w-4" />
+                  <span>Saved Papers Archive</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Your created question papers are saved in Supabase and ready to re-download anytime.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Stats Pill */}
+            <div className="flex items-center space-x-6 pt-2 border-t border-white/10 text-xs text-slate-400">
+              <div><strong className="text-white font-black text-sm">2,761+</strong> CBSE Items</div>
+              <div><strong className="text-white font-black text-sm">3</strong> Grade Levels</div>
+              <div><strong className="text-white font-black text-sm">Typst</strong> Vector PDFs</div>
+              <div><strong className="text-white font-black text-sm">1-Click</strong> Instant Export</div>
+            </div>
+          </div>
+
+          {/* Right Column: Teacher Authentication Box */}
+          <div className="lg:col-span-6">
+            <TeacherAuthModal isModal={false} onAuthenticated={(user) => setTeacherUser(user)} />
+          </div>
+        </div>
+
+        {/* Portal Footer */}
+        <footer className="border-t border-white/10 bg-black/40 py-6 text-center text-xs text-slate-400">
+          <div className="max-w-7xl mx-auto px-4 space-y-1">
+            <p>Autonomous AI Question Paper Generator • Official CBSE Board Blueprint & NCERT Catalog</p>
+            <p className="text-slate-500">FastAPI • Next.js 14 • Typst Typesetting • Supabase PostgreSQL</p>
+          </div>
+        </footer>
+      </main>
+    );
+  }
+
+  // 2. EDUCATOR STUDIO (Shown once teacher logs in)
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
-      {/* Teacher Authentication Gate (Sign Up / Sign In) */}
-      {isAuthLoaded && !teacherUser && (
-        <TeacherAuthModal onAuthenticated={(user) => setTeacherUser(user)} />
-      )}
-
       {/* Top Navigation Bar */}
       <nav className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -107,6 +245,11 @@ export default function Home() {
             >
               <Bookmark className="h-3.5 w-3.5" />
               <span>My Saved Papers</span>
+              {typeof teacherPaperCount === 'number' && teacherPaperCount > 0 && (
+                <span className="ml-1 rounded-full bg-blue-600 text-white text-[10px] px-1.5 py-0.2">
+                  {teacherPaperCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -115,10 +258,17 @@ export default function Home() {
             {teacherUser ? (
               <div className="flex items-center space-x-2 bg-slate-100/90 pl-3 pr-2 py-1.5 rounded-2xl border border-slate-200 shadow-xs">
                 <div className="flex flex-col text-left">
-                  <span className="text-xs font-black text-slate-900 truncate max-w-[130px] sm:max-w-[180px]">
-                    {teacherUser.name}
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-500 truncate max-w-[130px] sm:max-w-[180px]">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-xs font-black text-slate-900 truncate max-w-[120px] sm:max-w-[170px]">
+                      {teacherUser.name}
+                    </span>
+                    {typeof teacherPaperCount === 'number' && (
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2" title="Total Papers Created">
+                        {teacherPaperCount} {teacherPaperCount === 1 ? 'Paper' : 'Papers'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-500 truncate max-w-[120px] sm:max-w-[170px]">
                     {teacherUser.school}
                   </span>
                 </div>

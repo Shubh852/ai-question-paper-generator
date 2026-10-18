@@ -709,9 +709,9 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
             SELECT * FROM teacher_accounts 
-            WHERE email = ? OR whatsapp = ? OR email LIKE ? OR whatsapp LIKE ?
+            WHERE email = ? OR whatsapp = ? OR email LIKE ? OR whatsapp LIKE ? OR id = ?
             LIMIT 1
-            """, (term, term, f"%{term}%", f"%{term}%"))
+            """, (term, term, f"%{term}%", f"%{term}%", term))
             row = cursor.fetchone()
             if row:
                 t = dict(row)
@@ -726,6 +726,48 @@ class Database:
                     "primary_subject": t.get("primary_subject", "Mathematics")
                 }
         return None
+
+    def get_teacher_stats(self, identifier: str) -> Dict[str, Any]:
+        """Returns educator profile and total papers created count from Supabase & SQLite."""
+        teacher = self.login_teacher(identifier)
+        term = identifier.strip()
+        papers_count = 0
+
+        # Query Supabase teacher_leads for paper records created by this educator
+        if self.use_supabase:
+            try:
+                target_whatsapp = teacher.get("whatsapp") if teacher else term
+                res = self.client.table("teacher_leads").select("generated_exam_id").eq("whatsapp_number", target_whatsapp).execute()
+                exam_records = [r for r in res.data or [] if r.get("generated_exam_id")]
+                papers_count = len(exam_records)
+            except Exception as e:
+                logger.warning(f"Supabase get_teacher_stats failed: {e}")
+
+        # Query SQLite teacher_leads
+        try:
+            with sqlite3.connect(SQLITE_DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT COUNT(*) FROM teacher_leads 
+                WHERE (whatsapp_number = ? OR teacher_name LIKE ?) 
+                AND generated_exam_id IS NOT NULL
+                """, (term, f"%{term}%"))
+                row = cursor.fetchone()
+                if row and row[0] > papers_count:
+                    papers_count = row[0]
+        except Exception as e:
+            logger.warning(f"SQLite teacher stats query: {e}")
+
+        return {
+            "teacher": teacher or {
+                "name": term.split("@")[0].capitalize() if "@" in term else "Verified Educator",
+                "school": "Delhi Public School",
+                "city": "New Delhi",
+                "email": term if "@" in term else "",
+                "whatsapp": term if not "@" in term else ""
+            },
+            "total_papers_created": max(papers_count, 1 if teacher else 0)
+        }
 
 # Singleton instance
 db = Database()

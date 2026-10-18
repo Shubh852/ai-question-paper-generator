@@ -136,7 +136,14 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
   // Lead modal state
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [pendingDocDownload, setPendingDocDownload] = useState<'student' | 'solution'>('student');
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(true);
+
+  // Sync school name when currentUser is available
+  useEffect(() => {
+    if (currentUser?.school) {
+      setSchoolName(currentUser.school);
+    }
+  }, [currentUser]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -236,6 +243,9 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
           school_logo: schoolLogoUrl,
           exclude_question_ids: isRegenerating && examPaper?.question_ids ? examPaper.question_ids : undefined,
           created_by: currentUser?.name || undefined,
+          teacher_id: currentUser?.id || undefined,
+          teacher_phone: currentUser?.whatsapp || undefined,
+          teacher_city: currentUser?.city || undefined,
         }),
       });
 
@@ -302,7 +312,7 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
     }
   };
 
-  // Direct PDF Download
+  // Direct PDF Download (1-Click for Authenticated Teachers)
   const triggerPdfDownload = async (docType: 'student' | 'solution') => {
     if (!examPaper) return;
 
@@ -312,6 +322,21 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
         school_name: schoolName || examPaper.school_name,
         school_logo: schoolLogoUrl || examPaper.school_logo,
       };
+
+      // Record paper download in Supabase against educator account
+      if (currentUser && examPaper.id) {
+        fetch('/api/v1/capture-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teacher_name: currentUser.name,
+            school_name: schoolName || currentUser.school,
+            city: currentUser.city,
+            whatsapp_number: currentUser.whatsapp,
+            generated_exam_id: examPaper.id,
+          }),
+        }).catch(() => {});
+      }
 
       const res = await fetch('/api/v1/export-pdf', {
         method: 'POST',
@@ -341,12 +366,8 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
   };
 
   const handleDownloadClick = (docType: 'student' | 'solution') => {
-    if (isUnlocked) {
-      triggerPdfDownload(docType);
-    } else {
-      setPendingDocDownload(docType);
-      setIsLeadModalOpen(true);
-    }
+    // 1-Click instant download for educator without any prompt
+    triggerPdfDownload(docType);
   };
 
   const steps = [
@@ -986,7 +1007,7 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
               <span>Back</span>
             </button>
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate(false)}
               disabled={generating}
               className="flex items-center space-x-2 rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-700 active:scale-[0.99] transition-all disabled:opacity-50"
             >
@@ -1174,16 +1195,20 @@ export default function Wizard({ initialExam, onViewSavedPapers, currentUser }: 
                 </div>
               </div>
 
-              {/* General Instructions Box */}
-              <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 text-xs text-slate-600 mb-8 leading-relaxed">
-                <div className="font-bold text-slate-900 mb-1">General Instructions:</div>
-                <ol className="list-decimal pl-4 space-y-0.5">
-                  <li>This question paper contains 5 Sections: A, B, C, D, and E.</li>
-                  <li>Section A comprises MCQs and Assertion-Reason questions of 1 mark each.</li>
-                  <li>Section B comprises Very Short Answer (VSA) questions of 2 marks each.</li>
-                  <li>Section C comprises Short Answer (SA) questions of 3 marks each.</li>
-                  <li>Section D comprises Long Answer (LA) questions of 5 marks each.</li>
-                  <li>Section E comprises Case Based integrated units of assessment of 4 marks each.</li>
+              {/* General Instructions Box - Centered & Neatly Aligned */}
+              <div className="max-w-2xl mx-auto rounded-xl bg-slate-50/90 p-5 border border-slate-200 text-xs text-slate-700 mb-8 leading-relaxed shadow-xs">
+                <div className="text-center font-black tracking-wide text-slate-900 uppercase text-[11px] pb-2 border-b border-slate-200 mb-3">
+                  General Instructions
+                </div>
+                <ol className="list-decimal pl-5 space-y-1 text-slate-600">
+                  <li>This question paper contains 5 Sections: <strong className="text-slate-800">A</strong>, <strong className="text-slate-800">B</strong>, <strong className="text-slate-800">C</strong>, <strong className="text-slate-800">D</strong>, and <strong className="text-slate-800">E</strong>.</li>
+                  <li><strong className="text-slate-800">Section A</strong> comprises MCQs and Assertion-Reason questions of 1 mark each.</li>
+                  <li><strong className="text-slate-800">Section B</strong> comprises Very Short Answer (VSA) type questions of 2 marks each.</li>
+                  <li><strong className="text-slate-800">Section C</strong> comprises Short Answer (SA) type questions of 3 marks each.</li>
+                  <li><strong className="text-slate-800">Section D</strong> comprises Long Answer (LA) type questions of 5 marks each.</li>
+                  <li><strong className="text-slate-800">Section E</strong> comprises Case Based integrated units of assessment of 4 marks each with sub-parts.</li>
+                  <li>All Questions are compulsory. Internal choice is provided in select questions.</li>
+                  <li>Use of calculators or any electronic devices is strictly prohibited.</li>
                 </ol>
               </div>
 
