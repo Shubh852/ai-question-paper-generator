@@ -97,6 +97,17 @@ class LeadCaptureRequest(BaseModel):
     whatsapp_number: str = Field(..., example="+919876543210")
     generated_exam_id: Optional[str] = None
 
+class CopyCheckerLeadRequest(BaseModel):
+    teacher_name: str = Field(..., example="Dr. Ananya Sharma")
+    school_name: str = Field(..., example="Delhi Public School")
+    city: str = Field(default="Not specified", example="New Delhi")
+    whatsapp_number: str = Field(..., example="+919876543210")
+    email: Optional[str] = Field(default=None, example="teacher@dps.edu.in")
+    grade_level: Optional[int] = Field(default=10)
+    subject: Optional[str] = Field(default="Mathematics")
+    exam_id: Optional[str] = None
+    notes: Optional[str] = Field(default="Interested in AI Copy Checking @ Rs. 500")
+
 class ExportPdfRequest(BaseModel):
     exam: Dict[str, Any]
     target: str = Field(default="student", description="'student' or 'solution' or 'both'")
@@ -397,6 +408,31 @@ def capture_lead(req: LeadCaptureRequest):
         }
     except Exception as e:
         logger.error(f"Lead capture failed: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/v1/copy-checker-lead")
+def capture_copy_checker_lead(req: CopyCheckerLeadRequest):
+    """
+    Captures commercial lead interest for the AI Student Copy Evaluator product (Rs. 500 offer).
+    Saves lead into Supabase & SQLite teacher_leads table with [AI_COPY_CHECKER_500] tag.
+    """
+    try:
+        tagged_school = f"{req.school_name} [AI_COPY_CHECKER_500]"
+        lead_id = db.save_teacher_lead({
+            "teacher_name": req.teacher_name,
+            "school_name": tagged_school,
+            "city": req.city,
+            "whatsapp_number": req.whatsapp_number,
+            "generated_exam_id": req.exam_id
+        })
+        logger.info(f"Captured AI Copy Checker lead: {req.teacher_name} ({req.school_name}) - {req.whatsapp_number}")
+        return {
+            "status": "success",
+            "lead_id": lead_id,
+            "message": "AI Copy Checker inquiry received. Our academic specialist will reach out on WhatsApp!"
+        }
+    except Exception as e:
+        logger.error(f"Copy checker lead capture failed: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 # --- Teacher Authentication Endpoints ---

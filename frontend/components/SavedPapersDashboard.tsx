@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import AiCopyCheckerModal from './AiCopyCheckerModal';
+import AiCopyCheckerBanner from './AiCopyCheckerBanner';
 
 interface SavedExam {
   id: string;
@@ -33,6 +35,8 @@ export default function SavedPapersDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('ALL');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [showCopyCheckerModal, setShowCopyCheckerModal] = useState(false);
+  const [selectedExamForCopy, setSelectedExamForCopy] = useState<SavedExam | null>(null);
 
   const fetchSavedExams = async () => {
     setLoading(true);
@@ -132,6 +136,17 @@ export default function SavedPapersDashboard({
             </button>
           )}
         </div>
+      </div>
+
+      {/* AI Copy Evaluator Promotional Banner */}
+      <div className="mb-6">
+        <AiCopyCheckerBanner
+          onOpenModal={() => {
+            setSelectedExamForCopy(null);
+            setShowCopyCheckerModal(true);
+          }}
+          variant="compact"
+        />
       </div>
 
       {/* Metrics Row */}
@@ -344,6 +359,18 @@ export default function SavedPapersDashboard({
                     {downloadingId === `${exam.id}-combined` ? '⏳ Compiling Full Kit...' : '📦 Combined (Paper + Solutions)'}
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedExamForCopy(exam);
+                      setShowCopyCheckerModal(true);
+                    }}
+                    className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 px-2.5 py-1.5 text-xs font-black text-slate-950 transition shadow-xs cursor-pointer"
+                    title="Upload student answer sheets to evaluate via AI for this paper"
+                  >
+                    ⚡ Check Student Copies via AI (₹500)
+                  </button>
+
                   {onLoadExamToPreview && (
                     <button
                       onClick={() => onLoadExamToPreview(exam.id)}
@@ -358,6 +385,21 @@ export default function SavedPapersDashboard({
           })}
         </div>
       )}
+
+      {/* AI Student Copy Evaluator Modal */}
+      <AiCopyCheckerModal
+        isOpen={showCopyCheckerModal}
+        onClose={() => {
+          setShowCopyCheckerModal(false);
+          setSelectedExamForCopy(null);
+        }}
+        examContext={{
+          title: selectedExamForCopy?.title,
+          grade: selectedExamForCopy?.grade_level,
+          subject: selectedExamForCopy?.subject,
+          examId: selectedExamForCopy?.id
+        }}
+      />
     </div>
   );
 }

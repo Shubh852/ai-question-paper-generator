@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Wizard from '../components/Wizard';
 import SavedPapersDashboard from '../components/SavedPapersDashboard';
 import TeacherAuthModal, { TeacherUser } from '../components/TeacherAuthModal';
+import AiCopyCheckerModal from '../components/AiCopyCheckerModal';
 import { 
   Sparkles, 
   FileText, 
@@ -17,7 +18,8 @@ import {
   CheckCircle2,
   Layers,
   FileCheck,
-  Zap
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 
 export default function Home() {
@@ -26,6 +28,7 @@ export default function Home() {
   const [teacherUser, setTeacherUser] = useState<TeacherUser | null>(null);
   const [teacherPaperCount, setTeacherPaperCount] = useState<number | null>(null);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
+  const [isCopyCheckerOpen, setIsCopyCheckerOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -178,6 +181,30 @@ export default function Home() {
               </div>
             </div>
 
+            {/* AI Student Copy Evaluator Feature Callout */}
+            <div className="rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-purple-500/20 border border-amber-400/40 p-4 backdrop-blur-xs flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center space-x-1.5 text-amber-400 font-bold text-xs mb-0.5">
+                  <Zap className="h-4 w-4 fill-current" />
+                  <span>NEW: AI Student Copy Evaluator</span>
+                  <span className="bg-amber-400 text-slate-950 font-black text-[9px] px-1.5 py-0.2 rounded-full">
+                    ₹500 / batch
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Upload student copies in PDF — AI grades each step using official CBSE marking rubrics!
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCopyCheckerOpen(true)}
+                className="shrink-0 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs shadow-md transition-all flex items-center space-x-1 cursor-pointer"
+              >
+                <span>Learn More</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
             {/* Quick Stats Pill */}
             <div className="flex items-center space-x-6 pt-2 border-t border-white/10 text-xs text-slate-400">
               <div><strong className="text-white font-black text-sm">2,761+</strong> CBSE Items</div>
@@ -192,6 +219,13 @@ export default function Home() {
             <TeacherAuthModal isModal={false} onAuthenticated={(user) => setTeacherUser(user)} />
           </div>
         </div>
+
+        {/* AI Copy Checker Modal */}
+        <AiCopyCheckerModal
+          isOpen={isCopyCheckerOpen}
+          onClose={() => setIsCopyCheckerOpen(false)}
+          currentUser={teacherUser}
+        />
 
         {/* Portal Footer */}
         <footer className="border-t border-white/10 bg-black/40 py-6 text-center text-xs text-slate-400">
@@ -257,6 +291,20 @@ export default function Home() {
               )}
             </button>
           </div>
+
+          {/* AI Copy Checker Feature Pill Button */}
+          <button
+            type="button"
+            onClick={() => setIsCopyCheckerOpen(true)}
+            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-slate-950 font-black text-xs shadow-md shadow-orange-500/20 transition-all cursor-pointer"
+            title="Upload student copies to check automatically via AI for ₹500"
+          >
+            <Zap className="h-3.5 w-3.5 fill-current" />
+            <span>AI Copy Checker</span>
+            <span className="bg-black/15 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-md">
+              ₹500
+            </span>
+          </button>
 
           {/* Right Educator Profile & Status */}
           <div className="flex items-center space-x-2.5">
@@ -332,6 +380,13 @@ export default function Home() {
           onSwitchToGenerator={() => setActiveTab('create')}
         />
       )}
+
+      {/* AI Copy Checker Modal */}
+      <AiCopyCheckerModal
+        isOpen={isCopyCheckerOpen}
+        onClose={() => setIsCopyCheckerOpen(false)}
+        currentUser={teacherUser}
+      />
 
       {/* Footer */}
       <footer className="mt-16 border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">

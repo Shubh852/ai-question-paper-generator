@@ -256,6 +256,7 @@ All endpoints are hosted on the Railway production backend at `https://web-produ
 | `POST` | `/api/v1/auth/login` | Authenticates educator with password check | `{email_or_phone, password}` |
 | `GET` | `/api/v1/auth/demo` | Returns instant guest credentials for evaluation | None |
 | `GET` | `/api/v1/teacher/stats` | Returns educator profile and created paper counts | Query param: `?identifier=...` |
+| `POST` | `/api/v1/copy-checker-lead` | Captures commercial leads for AI Copy Evaluator (₹500 offer) | `{teacher_name, school_name, city, whatsapp_number, email, grade_level, subject, exam_id, notes}` |
 
 ---
 
@@ -289,6 +290,16 @@ Here is a summary of major milestones, bug fixes, and engineering decisions thro
 ### Milestone 6: Combined Paper + Solutions Download
 - **User Request:** Teachers requested the option to download the question paper and answer key together in a single PDF.
 - **Solution:** Added `target="combined"` / `doc="combined"` across backend endpoints, implemented `generate_combined_typst` with a clean `#pagebreak()`, and added **"📦 Paper + Solutions (PDF)"** buttons in both the generation wizard (Step 4) and the saved papers dashboard.
+
+### Milestone 7: AI Student Copy Evaluator (Lead Magnet & ₹500 Promotion Integration)
+- **Business Goal:** Use the Question Paper Generator as a high-conversion lead magnet for the founder's primary product: automated AI Copy Checking for school examinations with CBSE step-wise grading starting at ₹500/batch.
+- **Multi-Touchpoint UX Implementation:**
+  1. **Top Navigation Bar:** Added a persistent feature pill `[🤖 AI Copy Checker • ₹500]` accessible anytime across all views.
+  2. **Generation Studio (Step 4 Preview):** Integrated a high-converting promotional banner (`AiCopyCheckerBanner.tsx`) and action button `[Check Copies via AI (₹500)]` directly alongside the PDF export group.
+  3. **Post-Download Toast:** Automatically suggests AI copy evaluation the instant the teacher downloads the exam PDF.
+  4. **Saved Papers Dashboard:** Compact promotional banner and direct `[⚡ Check Student Copies via AI (₹500)]` action button on each saved paper card.
+  5. **Portal Landing Gate:** Feature spotlight card displayed on the unauthenticated educator login/signup portal.
+  6. **Interactive Showcase Modal (`AiCopyCheckerModal.tsx`):** Demonstrates the 3-step evaluation mechanism, displays the ₹500 introductory offer, allows sample copy PDF attachment, pre-fills educator profile data, logs leads via `/api/v1/copy-checker-lead` into Supabase/SQLite with `[AI_COPY_CHECKER_500]` tags, and provides 1-click WhatsApp deep-linking with pre-filled inquiries.
 
 ---
 
